@@ -1,37 +1,91 @@
-# 🛡️ Servidor VPN Personal (WireGuard) en Oracle Cloud
+# 🛡️ Proyecto: Despliegue de Servidor VPN (WireGuard) en OCI
 
-Este repositorio documenta el proceso de despliegue de un servidor VPN personal utilizando **WireGuard** sobre la infraestructura gratuita de **Oracle Cloud (Free Tier)**. 
+Documentación técnica integral del despliegue de una red privada virtual sobre la infraestructura gratuita de Oracle Cloud. Este proyecto ha sido desarrollado como una aplicación práctica de ingeniería telemática para la gestión de tráfico, cifrado y enrutamiento, con el objetivo de eludir el filtrado de paquetes (ISP) y garantizar una conexión segura y de alto rendimiento.
 
-El objetivo principal del proyecto es eludir el filtrado de paquetes y las restricciones de red impuestas por los ISP locales (bloqueos de tráfico de streaming y P2P), asegurando una conexión cifrada, privada y de alto rendimiento.
+## 🏗️ Arquitectura de la Infraestructura
 
-## 🏗️ Arquitectura e Infraestructura
+* **Proveedor Cloud:** Oracle Cloud Infrastructure (OCI - Free Tier).
+* **Instancia:** Máquina virtual ARM (Ampere A1 Compute, 4 OCPU, 24GB RAM).
+* **Ubicación del Datacenter:** París, Francia.
+* **Sistema Operativo:** Ubuntu Server 22.04 LTS.
+* **Protocolo de Túnel:** WireGuard (Capa 3, conectividad UDP).
+* **Dispositivo Cliente:** Xiaomi TV (Android TV).
 
-* **Proveedor Cloud:** Oracle Cloud Infrastructure (OCI).
-* **Instancia:** Máquina virtual ARM (Ampere A1 Compute).
-* **Ubicación:** París, Francia.
-* **Sistema Operativo:** Ubuntu Server.
-* **Protocolo VPN:** WireGuard (Capa 3, conexión a través de UDP).
-* **Cliente Final:** Android TV (Xiaomi TV) operando como *peer*.
+---
 
-## ⚙️ Proceso de Despliegue
+## ⚙️ Guía de Despliegue Paso a Paso
 
-### 1. Configuración de Red en OCI (VCN)
-Para permitir el tráfico del túnel, se modificaron las Listas de Seguridad (Security Lists) de la Red Virtual en la Nube de Oracle:
-* **Ingress Rule:** Apertura del puerto `51820` (Protocolo UDP) para cualquier origen (`0.0.0.0/0`).
+### Fase 1: Creación de Cuenta y Aprovisionamiento en Oracle OCI
 
-### 2. Acceso Seguro por SSH
-El acceso a la instancia se realiza mediante claves criptográficas ED25519. En entornos Windows, fue necesario asegurar los permisos del archivo de clave privada mediante `icacls` para cumplir con los estándares del demonio SSH:
-```powershell
-icacls clave.key /inheritance:r
-icacls clave.key /grant:r "%USERNAME%:(R)"
+1. **Registro en Oracle Cloud:**
+   * Acceder a [Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/) y completar el registro.
+   * *Nota:* Se requiere una tarjeta de crédito para verificación de identidad, pero los recursos "Always Free" no generan cargos.
+2. **Creación de la Instancia de Computación:**
+   * Navegar a **Compute** > **Instances** y hacer clic en **Create Instance**.
+   * **Imagen y forma:** Seleccionar la imagen de **Ubuntu** y cambiar la forma (Shape) a **Ampere (ARM)**. Asignar los recursos máximos gratuitos (4 OCPU, 24GB RAM).
+   * **Claves SSH:** En el apartado "Add SSH keys", seleccionar "Generate a key pair for me" y descargar la **clave privada** (`clave.key`). *Paso crítico para el acceso posterior.*
+   * Clic en **Create** y esperar a que el estado cambie a "Running". Anotar la IP Pública asignada.
+
+### Fase 2: Configuración de Reglas de Red (VCN)
+
+Para que el servidor VPN reciba conexiones, es necesario abrir el puerto en el cortafuegos perimetral de Oracle.
+1. En los detalles de la instancia, hacer clic en la red virtual (Subnet) asociada.
+2. Entrar en la **Security List** por defecto (Default Security List).
+3. Añadir una **Ingress Rule** (Regla de entrada):
+   * **Source CIDR:** `0.0.0.0/0` (Permitir tráfico desde cualquier IP global).
+   * **IP Protocol:** `UDP` (WireGuard funciona sobre UDP para minimizar la latencia).
+   * **Destination Port Range:** `51820`.
+
+### Fase 3: Preparación del Entorno Local (Windows) y Conexión SSH
+
+Para que el cliente SSH de Windows permita la conexión, el archivo de la clave privada no puede tener permisos abiertos a otros usuarios.
+1. Abrir PowerShell en el directorio donde se guardó `clave.key`.
+2. Restringir permisos con `icacls`:
+   ```powershell
+   icacls clave.key /inheritance:r
+   icacls clave.key /grant:r "%USERNAME%:(R)"
+   ```
+3. Conectar al servidor de Oracle en París:
+   ```powershell
+   ssh -i .\clave.key ubuntu@<IP_PUBLICA_ORACLE>
+   ```
+
+### Fase 4: Instalación y Configuración del Servidor WireGuard
+
+Dentro de la terminal de Ubuntu:
+1. Elevar privilegios y descargar el script automatizado de instalación de WireGuard:
+   ```bash
+   wget https://git.io/wireguard -O wireguard-install.sh && sudo bash wireguard-install.sh
+   ```
+2. Durante el asistente de instalación:
+   * **Puerto:** Confirmar el puerto `51820`.
+   * **Nombre del cliente:** Asignar un nombre identificativo (ej. `xiaomi-tv`).
+   * **DNS:** Seleccionar un proveedor (ej. 1.1.1.1 o Google).
+3. El script configurará automáticamente las reglas de enrutamiento (`iptables`), las claves criptográficas y levantará la interfaz virtual `wg0`.
+
+### Fase 5: Extracción de Credenciales
+
+1. Leer el contenido del archivo de configuración generado para el cliente:
+   ```bash
+   sudo cat /root/xiaomi-tv.conf
+   ```
+2. En el ordenador local, crear un archivo nuevo llamado `vpn-futbol.conf` y pegar el contenido extraído (bloques `[Interface]` y `[Peer]`). 
+   * *Precaución:* Asegurarse de que el bloc de notas no añada la extensión oculta `.txt`.
+
+### Fase 6: Despliegue en el Cliente Final (Xiaomi TV)
+
+1. **Transferencia de archivos:** Pasar el archivo `vpn-futbol.conf` a la memoria interna del Xiaomi TV (vía USB o aplicación de transferencia de archivos por WiFi).
+2. **Permisos de Android TV:** Ir a Ajustes > Aplicaciones > WireGuard > Permisos y conceder acceso al almacenamiento.
+3. **Importación:** Abrir la aplicación de WireGuard, seleccionar el botón "+" e importar desde archivo. Seleccionar `vpn-futbol.conf`.
+4. Activar el interruptor de la conexión. Todo el tráfico del dispositivo será ahora enrutado y cifrado hacia la instancia en París.
+
+---
+
+## 🔒 Control de Versiones (Git)
+
+Este proyecto utiliza un archivo `.gitignore` para prevenir la exposición pública de material criptográfico. Los siguientes archivos están excluidos del repositorio:
+```text
+*.key
+*.pem
+*.conf
 ```
-
-### 3. Instalación del Servidor WireGuard
-Se optó por WireGuard debido a su ligereza, integración directa en el kernel de Linux y alta eficiencia energética y de procesamiento en arquitecturas ARM.
-El enrutamiento, la creación de la interfaz virtual (`wg0`) y la generación de pares de claves se automatizó mediante script estándar.
-
-### 4. Configuración del Cliente
-Se extrajo el archivo de configuración `.conf` del servidor (conteniendo las claves públicas/privadas y el *Endpoint*) y se importó en el cliente de Android TV, estableciendo el túnel cifrado persistente.
-
-## ⚠️ Advertencia de Seguridad
-Los archivos de claves privadas (`.key`, `.pem`) y las configuraciones de los clientes (`.conf`) están excluidos de este repositorio por motivos de seguridad.

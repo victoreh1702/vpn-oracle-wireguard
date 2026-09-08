@@ -1,0 +1,8 @@
+# Ignorar claves privadas y configuraciones sensibles
+*.key
+*.pem
+*.conf
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db

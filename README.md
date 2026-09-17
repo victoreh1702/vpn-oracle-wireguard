@@ -79,6 +79,14 @@ Dentro de la terminal de Ubuntu:
 3. **Importación:** Abrir la aplicación de WireGuard, seleccionar el botón "+" e importar desde archivo. Seleccionar `vpn-futbol.conf`.
 4. Activar el interruptor de la conexión. Todo el tráfico del dispositivo será ahora enrutado y cifrado hacia la instancia en París.
 
+### 📱 Fase 7: Escalabilidad y Gestión Multicliente (Añadir un Smartphone)
+
+Para evitar conflictos de IP interna, cada dispositivo requiere su propio par de claves y dirección IP dentro de la subred de WireGuard (ej. `10.66.66.2` para la TV, `10.66.66.3` para el móvil).
+
+1. **Ejecución del Asistente:** Volver a conectar por SSH al servidor y lanzar nuevamente el script de instalación:
+   ```bash
+   sudo bash wireguard-install.sh
+   
 ---
 
 ## 🔒 Control de Versiones (Git)

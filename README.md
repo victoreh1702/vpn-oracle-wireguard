@@ -69,14 +69,14 @@ Dentro de la terminal de Ubuntu:
    ```bash
    sudo cat /root/xiaomi-tv.conf
    ```
-2. En el ordenador local, crear un archivo nuevo llamado `vpn-futbol.conf` y pegar el contenido extraído (bloques `[Interface]` y `[Peer]`). 
+2. En el ordenador local, crear un archivo nuevo llamado `vpn.conf` y pegar el contenido extraído (bloques `[Interface]` y `[Peer]`). 
    * *Precaución:* Asegurarse de que el bloc de notas no añada la extensión oculta `.txt`.
 
 ### Fase 6: Despliegue en el Cliente Final (Xiaomi TV)
 
-1. **Transferencia de archivos:** Pasar el archivo `vpn-futbol.conf` a la memoria interna del Xiaomi TV (vía USB o aplicación de transferencia de archivos por WiFi).
+1. **Transferencia de archivos:** Pasar el archivo `vpn.conf` a la memoria interna del Xiaomi TV (vía USB o aplicación de transferencia de archivos por WiFi).
 2. **Permisos de Android TV:** Ir a Ajustes > Aplicaciones > WireGuard > Permisos y conceder acceso al almacenamiento.
-3. **Importación:** Abrir la aplicación de WireGuard, seleccionar el botón "+" e importar desde archivo. Seleccionar `vpn-futbol.conf`.
+3. **Importación:** Abrir la aplicación de WireGuard, seleccionar el botón "+" e importar desde archivo. Seleccionar `vpn.conf`.
 4. Activar el interruptor de la conexión. Todo el tráfico del dispositivo será ahora enrutado y cifrado hacia la instancia en París.
 
 ### 📱 Fase 7: Escalabilidad y Gestión Multicliente (Añadir un Smartphone)
